@@ -1,0 +1,1496 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini Game Arcade</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101114;
+      --panel: #181b21;
+      --panel-2: #222731;
+      --text: #f5f7fb;
+      --muted: #a9b4c4;
+      --line: #303744;
+      --green: #00c986;
+      --yellow: #ffca4a;
+      --blue: #62a8ff;
+      --red: #ff5d73;
+      --shadow: 0 18px 48px rgba(0, 0, 0, .36);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 15% 12%, rgba(0, 201, 134, .18), transparent 28rem),
+        radial-gradient(circle at 88% 20%, rgba(98, 168, 255, .14), transparent 26rem),
+        radial-gradient(circle at 50% 100%, rgba(255, 202, 74, .1), transparent 30rem),
+        var(--bg);
+      color: var(--text);
+    }
+
+    body[data-theme="retro"] {
+      --bg: #16120f;
+      --panel: #211b17;
+      --panel-2: #2c241e;
+      --green: #ffd166;
+      --yellow: #ef476f;
+      --blue: #06d6a0;
+      --red: #f77f00;
+    }
+
+    body[data-theme="ice"] {
+      --bg: #0d141a;
+      --panel: #15202a;
+      --panel-2: #1d2b38;
+      --green: #8be9fd;
+      --yellow: #b9fbc0;
+      --blue: #a0c4ff;
+      --red: #ff8fab;
+    }
+
+    body[data-theme="lava"] {
+      --bg: #160d10;
+      --panel: #231318;
+      --panel-2: #331b20;
+      --green: #ffca3a;
+      --yellow: #ff7b00;
+      --blue: #f72585;
+      --red: #ff3c38;
+    }
+
+    main {
+      width: min(1220px, calc(100% - 32px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 24px 0;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 14px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.1rem, 6vw, 5rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(92px, 1fr));
+      gap: 10px;
+      min-width: min(460px, 100%);
+    }
+
+    .stat, aside, .stage {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(24, 27, 33, .82);
+      box-shadow: var(--shadow);
+    }
+
+    .stat {
+      padding: 11px 12px;
+      min-width: 0;
+    }
+
+    .label {
+      display: block;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .value {
+      display: block;
+      margin-top: 3px;
+      font-size: clamp(1.18rem, 2.5vw, 2.25rem);
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: 7px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(17, 19, 24, .84);
+      box-shadow: var(--shadow);
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+    }
+
+    .tab, .action {
+      min-height: 40px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .tab {
+      padding: 6px;
+      font-size: .86rem;
+    }
+
+    .tab.active {
+      color: #061311;
+      background: var(--green);
+    }
+
+    .tab:hover, .action:hover {
+      border-color: rgba(245, 247, 251, .28);
+      filter: brightness(1.08);
+    }
+
+    .toolbar, .cards {
+      display: grid;
+      gap: 10px;
+    }
+
+    .toolbar {
+      grid-template-columns: 1fr 1fr auto auto;
+      align-items: end;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(17, 19, 24, .82);
+      box-shadow: var(--shadow);
+    }
+
+    .segmented.theme { grid-template-columns: repeat(4, 1fr); }
+
+    .option {
+      min-height: 36px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .option.active {
+      color: #061311;
+      background: var(--green);
+    }
+
+    .cards {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .card {
+      min-height: 92px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(24, 27, 33, .72);
+      box-shadow: var(--shadow);
+      padding: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .card.active {
+      border-color: var(--green);
+      background: rgba(0, 201, 134, .16);
+    }
+
+    .card strong {
+      display: block;
+      font-size: 1rem;
+      line-height: 1.1;
+    }
+
+    .card span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 750;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 18px;
+      min-height: 580px;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 580px;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(0, 201, 134, .2), transparent 42%),
+        linear-gradient(315deg, rgba(98, 168, 255, .18), transparent 38%),
+        #151922;
+      user-select: none;
+      touch-action: none;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      min-height: 580px;
+      display: block;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 42px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .overlay.hidden { display: none; }
+
+    .overlay strong {
+      display: block;
+      font-size: clamp(2.7rem, 9vw, 8rem);
+      line-height: .9;
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .overlay span {
+      display: block;
+      margin-top: 20px;
+      color: rgba(245, 247, 251, .82);
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      font-weight: 750;
+    }
+
+    .mobile-controls {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      display: none;
+      grid-template-columns: 118px 1fr 72px;
+      gap: 12px;
+      align-items: end;
+      pointer-events: none;
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 36px);
+      grid-template-rows: repeat(3, 36px);
+      gap: 5px;
+      pointer-events: auto;
+    }
+
+    .dpad button, .mobile-action {
+      border: 1px solid rgba(245, 247, 251, .22);
+      border-radius: 8px;
+      background: rgba(17, 19, 24, .72);
+      color: var(--text);
+      font-weight: 950;
+      cursor: pointer;
+    }
+
+    .dpad .up { grid-column: 2; }
+    .dpad .left { grid-column: 1; grid-row: 2; }
+    .dpad .down { grid-column: 2; grid-row: 2; }
+    .dpad .right { grid-column: 3; grid-row: 2; }
+
+    .mobile-action {
+      min-height: 72px;
+      pointer-events: auto;
+    }
+
+    aside {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .action {
+      width: 100%;
+      background: var(--panel-2);
+      border-color: var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .rows {
+      display: grid;
+      gap: 4px;
+      margin-top: auto;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 750;
+    }
+
+    .row:last-child { border-bottom: 0; }
+    .row b {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .history {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 34px;
+    }
+
+    .achievements {
+      display: grid;
+      gap: 8px;
+      max-height: 150px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .achievement {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: var(--muted);
+      background: rgba(17, 19, 24, .62);
+      font-weight: 750;
+      font-size: .86rem;
+    }
+
+    .achievement.unlocked {
+      color: #061311;
+      border-color: transparent;
+      background: var(--green);
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--muted);
+      background: rgba(17, 19, 24, .82);
+      font-weight: 750;
+      font-size: .86rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    footer {
+      color: var(--muted);
+      font-size: .9rem;
+      text-align: center;
+    }
+
+    @media (max-width: 1000px) {
+      main {
+        width: min(100% - 20px, 760px);
+        padding: 18px 0;
+      }
+
+      header, .layout {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .layout { min-height: 0; }
+      .stage, canvas { min-height: min(62vh, 540px); }
+    }
+
+    @media (max-width: 520px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .tabs { grid-template-columns: 1fr 1fr; }
+      .cards { grid-template-columns: 1fr; }
+      .mobile-controls { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Mini Game Arcade</h1>
+      <section class="stats" aria-label="Game stats">
+        <div class="stat"><span class="label" id="scoreLabel">Score</span><span class="value" id="score">0</span></div>
+        <div class="stat"><span class="label" id="timeLabel">Time</span><span class="value" id="time">30.0</span></div>
+        <div class="stat"><span class="label" id="bestLabel">Best</span><span class="value" id="best">0</span></div>
+      </section>
+    </header>
+
+    <nav class="tabs" aria-label="Choose game">
+      <button class="tab active" type="button" data-game="aim">Aim Pop</button>
+      <button class="tab" type="button" data-game="dodge">Dodge Box</button>
+      <button class="tab" type="button" data-game="memory">Memory</button>
+      <button class="tab" type="button" data-game="football">Football</button>
+      <button class="tab" type="button" data-game="cards">Cards</button>
+      <button class="tab" type="button" data-game="hide">Hide Seek</button>
+      <button class="tab" type="button" data-game="pong">Ping Pong</button>
+      <button class="tab" type="button" data-game="fireball">Fireball</button>
+      <button class="tab" type="button" data-game="aliens">Aliens</button>
+      <button class="tab" type="button" data-game="snake">Snake</button>
+    </nav>
+
+    <section class="toolbar" aria-label="Arcade settings">
+      <div>
+        <span class="label">Difficulty</span>
+        <div class="segmented" id="difficultyGroup">
+          <button class="option" type="button" data-difficulty="easy">Easy</button>
+          <button class="option active" type="button" data-difficulty="normal">Normal</button>
+          <button class="option" type="button" data-difficulty="hard">Hard</button>
+        </div>
+      </div>
+      <div>
+        <span class="label">Theme</span>
+        <div class="segmented theme" id="themeGroup">
+          <button class="option active" type="button" data-theme-choice="neon">Neon</button>
+          <button class="option" type="button" data-theme-choice="retro">Retro</button>
+          <button class="option" type="button" data-theme-choice="ice">Ice</button>
+          <button class="option" type="button" data-theme-choice="lava">Lava</button>
+        </div>
+      </div>
+      <button class="action" id="soundToggle" type="button">Sound Off</button>
+      <button class="action" id="pause" type="button">Pause</button>
+    </section>
+
+    <section class="cards" id="gameCards" aria-label="Game cards"></section>
+
+    <section class="layout">
+      <div class="stage" id="stage">
+        <canvas id="gameCanvas" width="900" height="580" aria-label="Game area"></canvas>
+        <div class="overlay" id="overlay">
+          <div>
+            <strong id="big">0</strong>
+            <span id="hint">Press start</span>
+          </div>
+        </div>
+        <div class="mobile-controls" aria-label="Mobile controls">
+          <div class="dpad">
+            <button class="up" type="button" data-mobile-key="ArrowUp">^</button>
+            <button class="left" type="button" data-mobile-key="ArrowLeft">&lt;</button>
+            <button class="down" type="button" data-mobile-key="ArrowDown">v</button>
+            <button class="right" type="button" data-mobile-key="ArrowRight">&gt;</button>
+          </div>
+          <span></span>
+          <button class="mobile-action" id="mobileAction" type="button">A</button>
+        </div>
+      </div>
+
+      <aside>
+        <button class="action" id="start" type="button">Start Game</button>
+        <button class="action" id="restart" type="button">Restart</button>
+
+        <div class="rows">
+          <div class="row"><span>Goal</span><b id="goal">Hit targets</b></div>
+          <div class="row"><span>Controls</span><b id="controls">Mouse / Tap</b></div>
+          <div class="row"><span>Round</span><b id="round">30 seconds</b></div>
+          <div class="row"><span>Status</span><b id="status">Ready</b></div>
+        </div>
+
+        <div>
+          <span class="label">Recent Scores</span>
+          <div class="history" id="history" aria-live="polite"></div>
+        </div>
+
+        <div>
+          <span class="label">Achievements</span>
+          <div class="achievements" id="achievements" aria-live="polite"></div>
+        </div>
+      </aside>
+    </section>
+
+    <footer id="footer">Aim Pop: click or tap targets before time runs out.</footer>
+  </main>
+
+  <script>
+    const $ = selector => document.querySelector(selector);
+    const canvas = $("#gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const stage = $("#stage");
+    const tabs = [...document.querySelectorAll("[data-game]")];
+    const el = {
+      scoreLabel: $("#scoreLabel"),
+      timeLabel: $("#timeLabel"),
+      bestLabel: $("#bestLabel"),
+      score: $("#score"),
+      time: $("#time"),
+      best: $("#best"),
+      overlay: $("#overlay"),
+      big: $("#big"),
+      hint: $("#hint"),
+      start: $("#start"),
+      restart: $("#restart"),
+      soundToggle: $("#soundToggle"),
+      pause: $("#pause"),
+      gameCards: $("#gameCards"),
+      goal: $("#goal"),
+      controls: $("#controls"),
+      round: $("#round"),
+      status: $("#status"),
+      history: $("#history"),
+      achievements: $("#achievements"),
+      mobileAction: $("#mobileAction"),
+      footer: $("#footer")
+    };
+
+    const storageKey = "megaMiniArcadeScores";
+    const settingsKey = "megaMiniArcadeSettings";
+    const achievementsKey = "megaMiniArcadeAchievements";
+    const W = canvas.width;
+    const H = canvas.height;
+    const games = {
+      aim: ["Aim Pop", "Hit targets", "Mouse / Tap", "30 seconds", "Aim Pop: click or tap targets before time runs out."],
+      dodge: ["Dodge Box", "Collect coins", "WASD / Arrows", "Avoid red blocks", "Dodge Box: collect yellow coins and avoid red blocks."],
+      memory: ["Memory", "Match pairs", "Mouse / Tap", "Lower moves wins", "Memory: match all pairs with as few moves as possible."],
+      football: ["Football", "Score goals", "WASD / Arrows + Space", "60 seconds", "Football: push the ball into the goal. Space kicks harder."],
+      cards: ["High Card", "Beat dealer", "Click draw", "10 rounds", "Cards: draw a higher card than the dealer to score."],
+      hide: ["Hide Seek", "Find the hider", "Mouse / Tap", "5 tries", "Hide Seek: click bushes to find the hidden player."],
+      pong: ["Ping Pong", "Return the ball", "Mouse / Arrows", "3 lives", "Ping Pong: keep the ball in play with your paddle."],
+      fireball: ["Fireball", "Survive", "WASD / Arrows", "Dodge fireballs", "Fireball: dodge fireballs coming from the top."],
+      aliens: ["Aliens", "Shoot aliens", "A/D + Space", "3 lives", "Aliens: move and shoot the invaders before they reach you."],
+      snake: ["Snake", "Eat apples", "WASD / Arrows", "Don't hit yourself", "Snake: eat apples, grow longer, and avoid walls or your own tail."]
+    };
+
+    let game = "aim";
+    let running = false;
+    let ended = false;
+    let score = 0;
+    let startedAt = 0;
+    let duration = 30;
+    let loopId = 0;
+    let keys = {};
+    let pointer = { x: W / 2, y: H / 2, down: false };
+    let state = {};
+    let results = loadResults();
+    let settings = loadSettings();
+    let unlocked = loadAchievements();
+    let paused = false;
+    let pauseStarted = 0;
+    let audio = null;
+
+    const achievementList = {
+      first: ["First Play", "Start any game"],
+      scorer: ["Scoreboard", "Score 5+ in any game"],
+      football: ["Goal Getter", "Score a football goal"],
+      snake: ["Snake Snack", "Eat an apple in Snake"],
+      aliens: ["Alien Cleaner", "Shoot 5 aliens"],
+      fireball: ["Heat Check", "Survive 15 seconds"],
+      memory: ["Tile Brain", "Finish Memory"],
+      pong: ["Paddle Hands", "Return 5 balls"],
+      hide: ["Found You", "Win Hide n Seek"]
+    };
+
+    function loadResults() {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey) || "{}") || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveResults() {
+      localStorage.setItem(storageKey, JSON.stringify(results));
+    }
+
+    function loadSettings() {
+      try {
+        return { difficulty: "normal", theme: "neon", sound: false, ...JSON.parse(localStorage.getItem(settingsKey) || "{}") };
+      } catch {
+        return { difficulty: "normal", theme: "neon", sound: false };
+      }
+    }
+
+    function saveSettings() {
+      localStorage.setItem(settingsKey, JSON.stringify(settings));
+    }
+
+    function loadAchievements() {
+      try {
+        return JSON.parse(localStorage.getItem(achievementsKey) || "{}") || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveAchievements() {
+      localStorage.setItem(achievementsKey, JSON.stringify(unlocked));
+    }
+
+    function unlock(id) {
+      if (unlocked[id]) return;
+      unlocked[id] = true;
+      saveAchievements();
+      beep(880, .08);
+      renderAchievements();
+    }
+
+    function renderAchievements() {
+      el.achievements.innerHTML = Object.entries(achievementList).map(([id, data]) => `
+        <div class="achievement${unlocked[id] ? " unlocked" : ""}">
+          <strong>${data[0]}</strong><br>${data[1]}
+        </div>
+      `).join("");
+    }
+
+    function beep(freq = 420, seconds = .045) {
+      if (!settings.sound) return;
+      audio ||= new AudioContext();
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(.045, audio.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.001, audio.currentTime + seconds);
+      osc.connect(gain);
+      gain.connect(audio.destination);
+      osc.start();
+      osc.stop(audio.currentTime + seconds);
+    }
+
+    function difficultySpeed() {
+      return settings.difficulty === "easy" ? .76 : settings.difficulty === "hard" ? 1.28 : 1;
+    }
+
+    function difficultyScoreBonus() {
+      return settings.difficulty === "easy" ? 1 : settings.difficulty === "hard" ? 2 : 1;
+    }
+
+    function applySettings() {
+      document.body.dataset.theme = settings.theme === "neon" ? "" : settings.theme;
+      document.querySelectorAll("[data-difficulty]").forEach(button => button.classList.toggle("active", button.dataset.difficulty === settings.difficulty));
+      document.querySelectorAll("[data-theme-choice]").forEach(button => button.classList.toggle("active", button.dataset.themeChoice === settings.theme));
+      el.soundToggle.textContent = settings.sound ? "Sound On" : "Sound Off";
+      saveSettings();
+    }
+
+    function list() {
+      results[game] ||= [];
+      return results[game];
+    }
+
+    function best() {
+      const scores = list().map(item => item.score);
+      return scores.length ? Math.max(...scores) : 0;
+    }
+
+    function addResult(value) {
+      results[game] = [{ score: value, date: new Date().toISOString() }, ...list()].slice(0, 8);
+      saveResults();
+      if (value >= 5) unlock("scorer");
+    }
+
+    function elapsed() {
+      return startedAt ? (performance.now() - startedAt) / 1000 : 0;
+    }
+
+    function remaining() {
+      return Math.max(0, duration - elapsed());
+    }
+
+    function rand(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function dist(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function clearScreen() {
+      ctx.clearRect(0, 0, W, H);
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, "#151922");
+      grad.addColorStop(1, "#11151d");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = "rgba(245,247,251,.12)";
+      ctx.setLineDash([8, 8]);
+      ctx.strokeRect(18, 18, W - 36, H - 36);
+      ctx.setLineDash([]);
+    }
+
+    function text(txt, x, y, size = 28, color = "#f5f7fb", align = "center") {
+      ctx.fillStyle = color;
+      ctx.font = `900 ${size}px Inter, system-ui, sans-serif`;
+      ctx.textAlign = align;
+      ctx.textBaseline = "middle";
+      ctx.fillText(txt, x, y);
+    }
+
+    function rect(x, y, w, h, color, radius = 8) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, radius);
+      ctx.fill();
+    }
+
+    function circle(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function updateUi() {
+      const timed = ["aim", "football", "fireball"].includes(game);
+      el.score.textContent = score;
+      el.time.textContent = timed && running ? remaining().toFixed(1) : state.timeText || (timed ? duration.toFixed(1) : "-");
+      el.best.textContent = best();
+      el.status.textContent = paused ? "Paused" : running ? "Playing" : ended ? "Finished" : "Ready";
+      el.pause.textContent = paused ? "Resume" : "Pause";
+      el.history.innerHTML = list().map(item => `<span class="pill">${item.score}</span>`).join("");
+    }
+
+    function showOverlay(big = "0", hint = "Press start") {
+      el.overlay.classList.remove("hidden");
+      el.big.textContent = big;
+      el.hint.textContent = hint;
+    }
+
+    function hideOverlay() {
+      el.overlay.classList.add("hidden");
+    }
+
+    function setGame(next) {
+      game = next;
+      paused = false;
+      tabs.forEach(tab => tab.classList.toggle("active", tab.dataset.game === game));
+      const data = games[game];
+      el.scoreLabel.textContent = game === "memory" ? "Moves" : "Score";
+      el.timeLabel.textContent = game === "memory" ? "Pairs" : game === "cards" ? "Round" : game === "hide" ? "Tries" : "Time";
+      el.bestLabel.textContent = "Best";
+      el.goal.textContent = data[1];
+      el.controls.textContent = data[2];
+      el.round.textContent = data[3];
+      el.footer.textContent = data[4];
+      renderCards();
+      reset();
+    }
+
+    function renderCards() {
+      el.gameCards.innerHTML = Object.entries(games).map(([id, data]) => `
+        <button class="card${id === game ? " active" : ""}" type="button" data-card-game="${id}">
+          <strong>${data[0]}</strong>
+          <span>${data[1]} - ${data[2]}</span>
+        </button>
+      `).join("");
+      el.gameCards.querySelectorAll("[data-card-game]").forEach(card => {
+        card.addEventListener("click", () => setGame(card.dataset.cardGame));
+      });
+    }
+
+    function reset() {
+      cancelAnimationFrame(loopId);
+      running = false;
+      ended = false;
+      paused = false;
+      score = 0;
+      state = {};
+      keys = {};
+      clearScreen();
+      showOverlay("0", "Press start");
+      updateUi();
+    }
+
+    function finish(message = "Finished") {
+      if (!running) return;
+      running = false;
+      ended = true;
+      paused = false;
+      addResult(score);
+      checkGameAchievements();
+      beep(220, .12);
+      showOverlay(score, message);
+      updateUi();
+    }
+
+    function startGame() {
+      reset();
+      running = true;
+      paused = false;
+      startedAt = performance.now();
+      unlock("first");
+      beep(520, .05);
+      hideOverlay();
+      if (game === "aim") initAim();
+      if (game === "dodge") initDodge();
+      if (game === "memory") initMemory();
+      if (game === "football") initFootball();
+      if (game === "cards") initCards();
+      if (game === "hide") initHide();
+      if (game === "pong") initPong();
+      if (game === "fireball") initFireball();
+      if (game === "aliens") initAliens();
+      if (game === "snake") initSnake();
+      loop();
+    }
+
+    function loop() {
+      clearScreen();
+      if (paused) {
+        text("Paused", W / 2, H / 2, 64, "#ffca4a");
+        updateUi();
+        loopId = requestAnimationFrame(loop);
+        return;
+      }
+      if (game === "aim") drawAim();
+      if (game === "dodge") drawDodge();
+      if (game === "memory") drawMemory();
+      if (game === "football") drawFootball();
+      if (game === "cards") drawCards();
+      if (game === "hide") drawHide();
+      if (game === "pong") drawPong();
+      if (game === "fireball") drawFireball();
+      if (game === "aliens") drawAliens();
+      if (game === "snake") drawSnake();
+      updateUi();
+      if (running) loopId = requestAnimationFrame(loop);
+    }
+
+    function togglePause() {
+      if (!running) return;
+      paused = !paused;
+      if (paused) {
+        pauseStarted = performance.now();
+      } else if (pauseStarted) {
+        const pauseLength = performance.now() - pauseStarted;
+        startedAt += pauseLength;
+        if (state.lastStep) state.lastStep += pauseLength;
+        pauseStarted = 0;
+      }
+      beep(paused ? 260 : 620, .05);
+      updateUi();
+    }
+
+    function checkGameAchievements() {
+      if (game === "memory" && state.matches === 8) unlock("memory");
+      if (game === "hide" && score > 0) unlock("hide");
+      if (game === "pong" && score >= 5) unlock("pong");
+      if (game === "fireball" && score >= 15) unlock("fireball");
+      if (game === "aliens" && score >= 5) unlock("aliens");
+    }
+
+    function initAim() {
+      duration = settings.difficulty === "easy" ? 35 : settings.difficulty === "hard" ? 25 : 30;
+      state.target = { x: rand(80, W - 80), y: rand(80, H - 80), r: 34 };
+    }
+
+    function drawAim() {
+      if (remaining() <= 0) finish();
+      const t = state.target;
+      circle(t.x, t.y, t.r, "#ff5d73");
+      circle(t.x, t.y, t.r * .62, "#151922");
+      circle(t.x, t.y, t.r * .28, "#ffca4a");
+      text("Click the target", W / 2, 44, 22, "rgba(245,247,251,.75)");
+    }
+
+    function initDodge() {
+      duration = 0;
+      state.player = { x: W / 2, y: H / 2, s: 5 };
+      state.food = { x: rand(50, W - 50), y: rand(50, H - 50) };
+      state.hazards = Array.from({ length: 4 }, () => ({
+        x: rand(60, W - 60),
+        y: rand(60, H - 60),
+        vx: (rand(-3, 3) || 2) * difficultySpeed(),
+        vy: (rand(-3, 3) || -2) * difficultySpeed()
+      }));
+      state.timeText = "Survive";
+    }
+
+    function movePlayer(p) {
+      if (keys.ArrowLeft || keys.KeyA) p.x -= p.s;
+      if (keys.ArrowRight || keys.KeyD) p.x += p.s;
+      if (keys.ArrowUp || keys.KeyW) p.y -= p.s;
+      if (keys.ArrowDown || keys.KeyS) p.y += p.s;
+      p.x = clamp(p.x, 28, W - 28);
+      p.y = clamp(p.y, 28, H - 28);
+    }
+
+    function drawDodge() {
+      const p = state.player;
+      movePlayer(p);
+      state.hazards.forEach(h => {
+        h.x += h.vx;
+        h.y += h.vy;
+        if (h.x < 30 || h.x > W - 30) h.vx *= -1;
+        if (h.y < 30 || h.y > H - 30) h.vy *= -1;
+        if (dist(p, h) < 39) finish("You got hit");
+        rect(h.x - 21, h.y - 21, 42, 42, "#ff5d73");
+      });
+      if (dist(p, state.food) < 35) {
+        score += 1;
+        beep(600, .04);
+        state.food = { x: rand(50, W - 50), y: rand(50, H - 50) };
+        if (score % 4 === 0) state.hazards.push({ x: rand(60, W - 60), y: rand(60, H - 60), vx: (rand(-4, 4) || 3) * difficultySpeed(), vy: (rand(-4, 4) || -3) * difficultySpeed() });
+      }
+      circle(state.food.x, state.food.y, 13, "#ffca4a");
+      rect(p.x - 19, p.y - 19, 38, 38, "#00c986");
+    }
+
+    function initMemory() {
+      const symbols = ["A", "B", "C", "D", "E", "F", "G", "H"];
+      state.deck = [...symbols, ...symbols].sort(() => Math.random() - .5).map((symbol, index) => ({ symbol, index, open: false, matched: false }));
+      state.open = [];
+      state.lock = 0;
+      state.matches = 0;
+      state.timeText = "0/8";
+    }
+
+    function drawMemory() {
+      state.timeText = `${state.matches}/8`;
+      const gap = 12;
+      const tw = (W - 120 - gap * 3) / 4;
+      const th = (H - 100 - gap * 3) / 4;
+      state.deck.forEach((card, i) => {
+        const col = i % 4;
+        const row = Math.floor(i / 4);
+        card.x = 60 + col * (tw + gap);
+        card.y = 50 + row * (th + gap);
+        card.w = tw;
+        card.h = th;
+        const open = card.open || card.matched;
+        rect(card.x, card.y, tw, th, open ? "#00c986" : "#222731");
+        ctx.strokeStyle = "rgba(245,247,251,.18)";
+        ctx.strokeRect(card.x, card.y, tw, th);
+        if (open) text(card.symbol, card.x + tw / 2, card.y + th / 2, 38, "#061311");
+      });
+    }
+
+    function initFootball() {
+      duration = settings.difficulty === "easy" ? 75 : settings.difficulty === "hard" ? 45 : 60;
+      state.player = { x: 150, y: H / 2, s: 4.4 };
+      state.ball = { x: W / 2, y: H / 2, vx: 0, vy: 0 };
+      state.goal = { x: W - 28, y: H / 2 - 92, w: 22, h: 184 };
+    }
+
+    function drawFootball() {
+      if (remaining() <= 0) finish();
+      ctx.fillStyle = "rgba(0,201,134,.12)";
+      ctx.fillRect(34, 34, W - 68, H - 68);
+      ctx.strokeStyle = "rgba(245,247,251,.35)";
+      ctx.strokeRect(50, 50, W - 100, H - 100);
+      ctx.beginPath();
+      ctx.arc(W / 2, H / 2, 68, 0, Math.PI * 2);
+      ctx.stroke();
+      rect(state.goal.x, state.goal.y, state.goal.w, state.goal.h, "#ffca4a");
+      const p = state.player;
+      movePlayer(p);
+      const b = state.ball;
+      if (dist(p, b) < 45) {
+        const angle = Math.atan2(b.y - p.y, b.x - p.x);
+        const power = keys.Space ? 8 : 3.2;
+        b.vx += Math.cos(angle) * power;
+        b.vy += Math.sin(angle) * power;
+      }
+      b.x += b.vx;
+      b.y += b.vy;
+      b.vx *= .985;
+      b.vy *= .985;
+      if (b.x < 58 || b.x > W - 58) b.vx *= -0.8;
+      if (b.y < 58 || b.y > H - 58) b.vy *= -0.8;
+      b.x = clamp(b.x, 58, W - 58);
+      b.y = clamp(b.y, 58, H - 58);
+      if (b.x > state.goal.x && b.y > state.goal.y && b.y < state.goal.y + state.goal.h) {
+        score += difficultyScoreBonus();
+        unlock("football");
+        beep(720, .07);
+        b.x = W / 2;
+        b.y = H / 2;
+        b.vx = 0;
+        b.vy = 0;
+        p.x = 150;
+        p.y = H / 2;
+      }
+      rect(p.x - 18, p.y - 18, 36, 36, "#00c986");
+      circle(b.x, b.y, 18, "#f5f7fb");
+      circle(b.x, b.y, 8, "#151922");
+    }
+
+    function initCards() {
+      duration = 0;
+      state.round = 1;
+      state.playerCard = 0;
+      state.dealerCard = 0;
+      state.message = "Click to draw";
+      state.timeText = "1/10";
+    }
+
+    function drawCards() {
+      state.timeText = `${state.round}/10`;
+      drawCard(W / 2 - 190, H / 2 - 115, state.playerCard, "You");
+      drawCard(W / 2 + 50, H / 2 - 115, state.dealerCard, "Dealer");
+      text(state.message, W / 2, H - 90, 26, "#ffca4a");
+      if (state.round > 10) finish("Game over");
+    }
+
+    function drawCard(x, y, value, label) {
+      rect(x, y, 140, 200, "#f5f7fb");
+      text(label, x + 70, y - 24, 22, "#a9b4c4");
+      text(value ? String(value) : "?", x + 70, y + 100, 58, "#151922");
+    }
+
+    function initHide() {
+      duration = 0;
+      state.tries = 5;
+      state.hidden = Math.floor(Math.random() * 12);
+      state.open = new Set();
+      state.timeText = "5";
+    }
+
+    function drawHide() {
+      state.timeText = String(state.tries);
+      const cols = 4;
+      const size = 106;
+      const gap = 24;
+      const startX = W / 2 - (cols * size + (cols - 1) * gap) / 2;
+      const startY = 74;
+      for (let i = 0; i < 12; i++) {
+        const x = startX + (i % cols) * (size + gap);
+        const y = startY + Math.floor(i / cols) * (size + gap);
+        const open = state.open.has(i);
+        state.cells ||= [];
+        state.cells[i] = { x, y, w: size, h: size };
+        rect(x, y, size, size, open ? "#222731" : "#00c986");
+        text(open ? (i === state.hidden ? "FOUND" : "NO") : "?", x + size / 2, y + size / 2, open && i === state.hidden ? 22 : 34, open && i === state.hidden ? "#ffca4a" : "#061311");
+      }
+    }
+
+    function initPong() {
+      duration = 0;
+      state.lives = settings.difficulty === "easy" ? 5 : settings.difficulty === "hard" ? 2 : 3;
+      state.paddle = { x: W / 2 - 58, y: H - 54, w: 116, h: 16 };
+      state.ball = { x: W / 2, y: H / 2, vx: 4 * difficultySpeed(), vy: -4 * difficultySpeed() };
+      state.timeText = "3 lives";
+    }
+
+    function drawPong() {
+      state.timeText = `${state.lives} lives`;
+      const pad = state.paddle;
+      if (keys.ArrowLeft || keys.KeyA) pad.x -= 8;
+      if (keys.ArrowRight || keys.KeyD) pad.x += 8;
+      if (pointer.down) pad.x = pointer.x - pad.w / 2;
+      pad.x = clamp(pad.x, 30, W - pad.w - 30);
+      const b = state.ball;
+      b.x += b.vx;
+      b.y += b.vy;
+      if (b.x < 28 || b.x > W - 28) b.vx *= -1;
+      if (b.y < 28) b.vy *= -1;
+      if (b.y > pad.y - 12 && b.x > pad.x && b.x < pad.x + pad.w && b.vy > 0) {
+        b.vy *= -1.06;
+        b.vx += (b.x - (pad.x + pad.w / 2)) * .035;
+        score += 1;
+        if (score >= 5) unlock("pong");
+        beep(560, .035);
+      }
+      if (b.y > H + 20) {
+        state.lives -= 1;
+        b.x = W / 2;
+        b.y = H / 2;
+        b.vx = rand(-4, 4) || 4;
+        b.vy = -4;
+        if (state.lives <= 0) finish("Out of lives");
+      }
+      rect(pad.x, pad.y, pad.w, pad.h, "#00c986");
+      circle(b.x, b.y, 13, "#ffca4a");
+    }
+
+    function initFireball() {
+      duration = settings.difficulty === "easy" ? 55 : settings.difficulty === "hard" ? 35 : 45;
+      state.player = { x: W / 2, y: H - 70, s: 6 };
+      state.fireballs = [];
+      state.spawn = 0;
+    }
+
+    function drawFireball() {
+      if (remaining() <= 0) finish("Survived");
+      score = Math.floor(elapsed());
+      const p = state.player;
+      movePlayer(p);
+      p.y = clamp(p.y, 42, H - 42);
+      state.spawn -= 1;
+      if (state.spawn <= 0) {
+        state.spawn = Math.max(8, (42 - score) / difficultySpeed());
+        state.fireballs.push({ x: rand(34, W - 34), y: -30, vx: rand(-1.5, 1.5), vy: (rand(4, 7) + score * .03) * difficultySpeed(), r: rand(14, 24) });
+      }
+      state.fireballs.forEach(f => {
+        f.x += f.vx;
+        f.y += f.vy;
+        circle(f.x, f.y, f.r, "#ff5d73");
+        circle(f.x - f.r * .25, f.y - f.r * .25, f.r * .42, "#ffca4a");
+        if (dist(p, f) < f.r + 19) finish("Burned");
+      });
+      state.fireballs = state.fireballs.filter(f => f.y < H + 40);
+      if (score >= 15) unlock("fireball");
+      rect(p.x - 19, p.y - 19, 38, 38, "#62a8ff");
+    }
+
+    function initAliens() {
+      duration = 0;
+      state.lives = 3;
+      state.player = { x: W / 2, y: H - 54, s: 7 };
+      state.bullets = [];
+      state.cooldown = 0;
+      state.dir = 1;
+      state.aliens = [];
+      for (let row = 0; row < 4; row++) {
+        for (let col = 0; col < 8; col++) state.aliens.push({ x: 140 + col * 74, y: 82 + row * 50, alive: true });
+      }
+      state.timeText = "3 lives";
+    }
+
+    function drawAliens() {
+      state.timeText = `${state.lives} lives`;
+      const p = state.player;
+      if (keys.ArrowLeft || keys.KeyA) p.x -= p.s;
+      if (keys.ArrowRight || keys.KeyD) p.x += p.s;
+      p.x = clamp(p.x, 36, W - 36);
+      state.cooldown -= 1;
+      if (keys.Space && state.cooldown <= 0) {
+        state.bullets.push({ x: p.x, y: p.y - 24 });
+        state.cooldown = 12;
+      }
+      let edge = false;
+      state.aliens.filter(a => a.alive).forEach(a => {
+        a.x += state.dir * (1 + score * .015);
+        if (a.x < 38 || a.x > W - 38) edge = true;
+      });
+      if (edge) {
+        state.dir *= -1;
+        state.aliens.forEach(a => a.y += 18);
+      }
+      state.bullets.forEach(b => b.y -= 8);
+      state.bullets = state.bullets.filter(b => b.y > -20);
+      state.bullets.forEach(b => {
+        state.aliens.forEach(a => {
+          if (a.alive && Math.abs(b.x - a.x) < 25 && Math.abs(b.y - a.y) < 22) {
+            a.alive = false;
+            b.y = -100;
+            score += 1;
+            if (score >= 5) unlock("aliens");
+            beep(680, .035);
+          }
+        });
+      });
+      state.aliens.forEach(a => {
+        if (!a.alive) return;
+        rect(a.x - 24, a.y - 17, 48, 34, "#00c986");
+        circle(a.x - 10, a.y - 3, 4, "#061311");
+        circle(a.x + 10, a.y - 3, 4, "#061311");
+        if (a.y > H - 95) finish("Aliens landed");
+      });
+      state.bullets.forEach(b => rect(b.x - 3, b.y - 12, 6, 18, "#ffca4a", 3));
+      rect(p.x - 26, p.y - 15, 52, 30, "#62a8ff");
+      if (state.aliens.every(a => !a.alive)) finish("You won");
+    }
+
+    function initSnake() {
+      duration = 0;
+      const cols = 24;
+      const rows = 16;
+      state.grid = { cols, rows, size: 26, ox: (W - cols * 26) / 2, oy: (H - rows * 26) / 2 };
+      state.snake = [
+        { x: 10, y: 8 },
+        { x: 9, y: 8 },
+        { x: 8, y: 8 }
+      ];
+      state.dir = { x: 1, y: 0 };
+      state.nextDir = { x: 1, y: 0 };
+      state.stepMs = settings.difficulty === "easy" ? 170 : settings.difficulty === "hard" ? 105 : 135;
+      state.lastStep = performance.now();
+      state.apple = snakeApple();
+      state.timeText = "Growing";
+    }
+
+    function snakeApple() {
+      let apple;
+      do {
+        apple = {
+          x: Math.floor(Math.random() * state.grid.cols),
+          y: Math.floor(Math.random() * state.grid.rows)
+        };
+      } while (state.snake?.some(part => part.x === apple.x && part.y === apple.y));
+      return apple;
+    }
+
+    function drawSnake() {
+      state.timeText = `${state.snake.length} long`;
+      const now = performance.now();
+      if (now - state.lastStep >= state.stepMs) {
+        state.lastStep = now;
+        const current = state.dir;
+        const next = state.nextDir;
+        if (!(next.x === -current.x && next.y === -current.y)) state.dir = next;
+        const head = state.snake[0];
+        const newHead = { x: head.x + state.dir.x, y: head.y + state.dir.y };
+        const hitWall = newHead.x < 0 || newHead.x >= state.grid.cols || newHead.y < 0 || newHead.y >= state.grid.rows;
+        const hitSelf = state.snake.some(part => part.x === newHead.x && part.y === newHead.y);
+        if (hitWall || hitSelf) {
+          finish("Snake crashed");
+          return;
+        }
+        state.snake.unshift(newHead);
+        if (newHead.x === state.apple.x && newHead.y === state.apple.y) {
+          score += 1;
+          unlock("snake");
+          beep(700, .04);
+          state.apple = snakeApple();
+          state.stepMs = Math.max(70, state.stepMs - 3);
+        } else {
+          state.snake.pop();
+        }
+      }
+
+      const g = state.grid;
+      ctx.fillStyle = "rgba(245,247,251,.05)";
+      ctx.fillRect(g.ox, g.oy, g.cols * g.size, g.rows * g.size);
+      ctx.strokeStyle = "rgba(245,247,251,.08)";
+      for (let x = 0; x <= g.cols; x++) {
+        ctx.beginPath();
+        ctx.moveTo(g.ox + x * g.size, g.oy);
+        ctx.lineTo(g.ox + x * g.size, g.oy + g.rows * g.size);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= g.rows; y++) {
+        ctx.beginPath();
+        ctx.moveTo(g.ox, g.oy + y * g.size);
+        ctx.lineTo(g.ox + g.cols * g.size, g.oy + y * g.size);
+        ctx.stroke();
+      }
+      circle(g.ox + state.apple.x * g.size + g.size / 2, g.oy + state.apple.y * g.size + g.size / 2, 10, "#ff5d73");
+      state.snake.forEach((part, index) => {
+        rect(
+          g.ox + part.x * g.size + 3,
+          g.oy + part.y * g.size + 3,
+          g.size - 6,
+          g.size - 6,
+          index === 0 ? "#ffca4a" : "#00c986",
+          5
+        );
+      });
+    }
+
+    function canvasPoint(event) {
+      const r = canvas.getBoundingClientRect();
+      return { x: (event.clientX - r.left) * (W / r.width), y: (event.clientY - r.top) * (H / r.height) };
+    }
+
+    function handleClick(event) {
+      const p = canvasPoint(event);
+      pointer = { ...pointer, ...p, down: true };
+      if (!running) {
+        startGame();
+        return;
+      }
+      if (game === "aim") {
+        if (dist(p, state.target) <= state.target.r) {
+          score += difficultyScoreBonus();
+          beep(620, .04);
+          state.target = { x: rand(80, W - 80), y: rand(80, H - 80), r: Math.max(20, 34 - Math.floor(score / 5)) };
+        }
+      }
+      if (game === "memory") {
+        if (state.lock > performance.now()) return;
+        const card = state.deck.find(c => !c.matched && !c.open && p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h);
+        if (!card) return;
+        card.open = true;
+        state.open.push(card);
+        if (state.open.length === 2) {
+          score += 1;
+          const [a, b] = state.open;
+          if (a.symbol === b.symbol) {
+            a.matched = true;
+            b.matched = true;
+            state.matches += 1;
+            beep(640, .05);
+            state.open = [];
+            if (state.matches === 8) finish("Matched all");
+          } else {
+            state.lock = performance.now() + 650;
+            setTimeout(() => {
+              a.open = false;
+              b.open = false;
+              state.open = [];
+            }, 620);
+          }
+        }
+      }
+      if (game === "cards") {
+        if (state.round > 10) return;
+        state.playerCard = Math.ceil(Math.random() * 13);
+        state.dealerCard = Math.ceil(Math.random() * 13);
+        if (state.playerCard > state.dealerCard) {
+          score += 1;
+          beep(620, .045);
+          state.message = "You win the round";
+        } else if (state.playerCard === state.dealerCard) {
+          state.message = "Tie";
+        } else {
+          state.message = "Dealer wins";
+        }
+        state.round += 1;
+        if (state.round > 10) finish("Cards done");
+      }
+      if (game === "hide") {
+        const hit = state.cells?.findIndex(c => p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h);
+        if (hit === undefined || hit < 0 || state.open.has(hit)) return;
+        state.open.add(hit);
+        state.tries -= 1;
+        if (hit === state.hidden) {
+          score = state.tries + 1;
+          unlock("hide");
+          beep(760, .08);
+          finish("Found");
+        } else if (state.tries <= 0) {
+          score = 0;
+          finish("Not found");
+        }
+      }
+    }
+
+    canvas.addEventListener("pointerdown", handleClick);
+    canvas.addEventListener("pointermove", event => {
+      pointer = { ...pointer, ...canvasPoint(event) };
+    });
+    canvas.addEventListener("pointerup", () => {
+      pointer.down = false;
+    });
+
+    tabs.forEach(tab => tab.addEventListener("click", () => setGame(tab.dataset.game)));
+    el.start.addEventListener("click", startGame);
+    el.restart.addEventListener("click", startGame);
+    el.pause.addEventListener("click", togglePause);
+    el.soundToggle.addEventListener("click", () => {
+      settings.sound = !settings.sound;
+      applySettings();
+      beep(540, .05);
+    });
+
+    document.querySelectorAll("[data-difficulty]").forEach(button => {
+      button.addEventListener("click", () => {
+        settings.difficulty = button.dataset.difficulty;
+        applySettings();
+        reset();
+      });
+    });
+
+    document.querySelectorAll("[data-theme-choice]").forEach(button => {
+      button.addEventListener("click", () => {
+        settings.theme = button.dataset.themeChoice;
+        applySettings();
+        clearScreen();
+      });
+    });
+
+    document.querySelectorAll("[data-mobile-key]").forEach(button => {
+      const key = button.dataset.mobileKey;
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        keys[key] = true;
+        if (game === "snake" && state.nextDir) {
+          if (key === "ArrowLeft") state.nextDir = { x: -1, y: 0 };
+          if (key === "ArrowRight") state.nextDir = { x: 1, y: 0 };
+          if (key === "ArrowUp") state.nextDir = { x: 0, y: -1 };
+          if (key === "ArrowDown") state.nextDir = { x: 0, y: 1 };
+        }
+      });
+      button.addEventListener("pointerup", () => { keys[key] = false; });
+      button.addEventListener("pointerleave", () => { keys[key] = false; });
+    });
+
+    el.mobileAction.addEventListener("pointerdown", event => {
+      event.preventDefault();
+      keys.Space = true;
+      if (!running) startGame();
+      if (game === "cards" || game === "hide" || game === "aim") {
+        handleClick({ clientX: canvas.getBoundingClientRect().left + canvas.getBoundingClientRect().width / 2, clientY: canvas.getBoundingClientRect().top + canvas.getBoundingClientRect().height / 2 });
+      }
+    });
+
+    el.mobileAction.addEventListener("pointerup", () => {
+      keys.Space = false;
+    });
+
+    window.addEventListener("keydown", event => {
+      keys[event.code] = true;
+      if (game === "snake" && state.nextDir) {
+        if (event.code === "ArrowLeft" || event.code === "KeyA") state.nextDir = { x: -1, y: 0 };
+        if (event.code === "ArrowRight" || event.code === "KeyD") state.nextDir = { x: 1, y: 0 };
+        if (event.code === "ArrowUp" || event.code === "KeyW") state.nextDir = { x: 0, y: -1 };
+        if (event.code === "ArrowDown" || event.code === "KeyS") state.nextDir = { x: 0, y: 1 };
+      }
+      if (event.code === "Space") event.preventDefault();
+      if (event.key.toLowerCase() === "p") togglePause();
+      if (event.key.toLowerCase() === "r") startGame();
+    });
+
+    window.addEventListener("keyup", event => {
+      keys[event.code] = false;
+    });
+
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+      };
+    }
+
+    applySettings();
+    renderAchievements();
+    renderCards();
+    setGame("aim");
+  </script>
+</body>
+</html>
